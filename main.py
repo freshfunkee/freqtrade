@@ -80,6 +80,8 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
             and trade.open_order_id is None:
         trade.is_open = False
         logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
+        whitelist = _CONF[trade.exchange.name.lower()]['pair_whitelist']
+        whitelist.append(trade.pair)
         return True
     return False
 
