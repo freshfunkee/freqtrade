@@ -42,6 +42,7 @@ def init(config: dict) -> None:
         CommandHandler('start', _start),
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
+        CommandHandler('forcesellall', _forcesellall),
         CommandHandler('performance', _performance),
     ]
     for handle in handles:
@@ -298,6 +299,39 @@ def _performance(bot: Bot, update: Update) -> None:
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
+@authorized_only
+def _forcesellall(bot: Bot, update: Update) -> None:
+    """
+    Handler for /forcesellall.
+    Sells all currently active trades
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    # Fetch open trade
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    if get_state() != State.RUNNING:
+        send_msg('*Status:* `trader is not running`', bot=bot)
+    elif not trades:
+        send_msg('*Status:* `no active order`', bot=bot)
+    else:
+        for trade in trades:
+            # Get current rate
+            current_rate = exchange.get_ticker(trade.pair)['bid']
+            # Get available balance
+            currency = trade.pair.split('_')[1]
+            balance = exchange.get_balance(currency)
+            # Execute sell
+            profit = trade.exec_sell_order(current_rate, balance)
+            message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
+                trade.exchange.name,
+                trade.pair.replace('_', '/'),
+                exchange.get_pair_detail_url(trade.pair),
+                trade.close_rate,
+                round(profit, 2)
+            )
+            logger.info(message)
+            send_msg(message)
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
     """
