@@ -4,7 +4,7 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 from jsonschema import validate
 
@@ -140,6 +140,13 @@ def handle_trade(trade: Trade) -> None:
     except ValueError:
         logger.exception('Unable to handle open order')
 
+def get_target_bid(ticker: Dict[str, float]) -> float:
+    """ Calculates bid target between current ask price and last price """
+    if ticker['ask'] < ticker['last']:
+        return ticker['ask']
+    balance = _CONF['bid_strategy']['ask_last_balance']
+    return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
 
 def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[Trade]:
     """
@@ -150,7 +157,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
     """
     logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
     whitelist = _CONF[_exchange.name.lower()]['pair_whitelist']
-    # Check if btc_amount is fulfilled
+    # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise ValueError(
             'stake amount is not fulfilled (currency={}'.format(_CONF['stake_currency'])
@@ -176,7 +183,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
     else:
         return None
 
-    open_rate = exchange.get_ticker(pair)['ask']
+    open_rate = get_target_bid(exchange.get_ticker(pair))
     amount = stake_amount / open_rate
     order_id = exchange.buy(pair, open_rate, amount)
 
@@ -190,7 +197,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
     logger.info(message)
     telegram.send_msg(message)
     return Trade(pair=pair,
-                 btc_amount=stake_amount,
+                 stake_amount=stake_amount,
                  open_rate=open_rate,
                  open_date=datetime.utcnow(),
                  amount=amount,

@@ -3,7 +3,11 @@
 [![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
 
 Simple High frequency trading bot for crypto currencies.
+<<<<<<< HEAD
 Currently supports trading on Bittrex exchange.
+=======
+Currently supported exchanges: bittrex
+>>>>>>> 2bd51d8be3cca04438aa96518166d2c9b558059a
 
 This software is for educational purposes only.
 Don't risk money which you are afraid to lose.
@@ -43,6 +47,9 @@ profit dips below -10% for a given trade. This parameter is optional.
 `initial_state` is an optional field that defines the initial application state.
 Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
+
+`ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
+use the `last` price and values between those interpolate between ask and last price. Using `ask` price will guarantee quick success in bid, but bot will also end up paying more then would probably have been necessary.
 
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
